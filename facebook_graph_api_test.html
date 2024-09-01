@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Graph API Test Task</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #login-button {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #login-button:hover {
+            background-color: #3e8e41;
+        }
+        #user-info {
+            margin-top: 20px;
+        }
+        #pages-dropdown {
+            margin-top: 20px;
+        }
+        #insights-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button id="login-button">Login with Facebook</button>
+    <div id="user-info"></div>
+    <select id="pages-dropdown"></select>
+    <button id="submit-button">Submit</button>
+    <div id="insights-container"></div>
+
+    <script>
+        // Facebook App ID and Secret
+        const appId = 'YOUR_APP_ID';
+        const appSecret = 'YOUR_APP_SECRET';
+
+        // Facebook SDK for JavaScript
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: appId,
+                cookie: true,
+                xfbml: true,
+                version: 'v20.0'
+            });
+
+            FB.AppEvents.logPageView();
+
+            // Login with Facebook Button
+            document.getElementById('login-button').addEventListener('click', function() {
+                FB.login(function(response) {
+                    if (response.authResponse) {
+                        // User logged in successfully
+                        console.log('User logged in successfully');
+                        getUserInfo();
+                    } else {
+                        // User cancelled login
+                        console.log('User cancelled login');
+                    }
+                }, { scope: 'public_profile, email, pages_show_list, pages_read_engagement' });
+            });
+        };
+
+        // Load Facebook SDK for JavaScript
+        (function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+
+        // Get User Info
+        function getUserInfo() {
+            FB.api('/me', function(response) {
+                const userName = response.name;
+                const userPicture = response.picture.data.url;
+
+                // Display User Info
+                const userInfoDiv = document.getElementById('user-info');
+                userInfoDiv.innerHTML = `
+                    <h2>${userName}</h2>
+                    <img src="${userPicture}" alt="${userName}">
+                `;
+
+                // Get Pages Managed by User
+                getPages();
+            });
+        }
+
+        // Get Pages Managed by User
+        function getPages() {
+            FB.api('/me/accounts', function(response) {
+                const pages = response.data;
+
+                // Create Dropdown Menu
+                const dropdownMenu = document.getElementById('pages-dropdown');
+                pages.forEach(function(page) {
+                    const option = document.createElement('option');
+                    option.value = page.id;
+                    option.text = page.name;
+                    dropdownMenu.appendChild(option);
+                });
+
+                // Add Event Listener to Submit Button
+                document.getElementById('submit-button').addEventListener('click', function() {
+                    const selectedPageId = dropdownMenu.value;
+                    getInsights(selectedPageId);
+                });
+            });
+        }
+
+        // Get Insights of Selected Page
+        function getInsights(pageId) {
+            FB.api(`/${pageId}/insights`, function(response) {
+                const insights = response.data;
+
+                // Display Insights
+                const insightsContainer = document.getElementById('insights-container');
+                insightsContainer.innerHTML = '';
+                insights.forEach(function(insight) {
+                    const insightElement = document.createElement('div');
+                    insightElement.innerHTML = `${insight.name}: ${insight.values[0].value}`;
+                    insightsContainer.appendChild(insightElement);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
